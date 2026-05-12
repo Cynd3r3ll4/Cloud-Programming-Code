@@ -1,34 +1,34 @@
-name: Deploy to AWS
+name: Deploy to AWS # Worflow Name
 
-on:
+on: # Start des Triggers = push auf main branch
   push:
     branches:
       - main
 
-permissions:
+permissions: # erlaubt GitHub Actions, auf AWS zuzugreifen, durch das Erzeugen eines temporären Tokens (keine Keys) und den Inhalt zu lesen
   id-token: write
   contents: read
 
-jobs:
+jobs: # Jobs, die ausgeführt werden sollen
   deploy:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4 # Checkt den Code aus dem Repository aus, damit er in den nächsten Schritten verwendet werden kann
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v4 # Action, um AWS-Zugangsdaten zu konfigurieren, damit die AWS CLI in den nächsten Schritten verwendet werden kann
         with:
-          role-to-assume: ${{ secrets.AWS_ROLLE }}
+          role-to-assume: ${{ secrets.AWS_ROLLE }} # Die IAM-Rolle, die die Action annehmen soll, um Zugriff auf AWS zu erhalten (in den Repository-Geheimnissen gespeichert)
           aws-region: eu-central-1
 
       - name: Sync to S3
-        run: |
-          aws s3 sync Webseite/ s3://cloud-programming-bucket-cynd3r3ll4 --delete
+        run: | # synchronisiert Dateien aus dem lokalen Verzeichnis, überführt sie in den S3-Bucket und löscht Dateien im Bucket, die nicht mehr im lokalen Verzeichnis vorhanden sind
+          aws s3 sync Webseite/ s3://cloud-programming-bucket-cynd3r3ll4 --delete 
 
       - name: Invalidate CloudFront cache
-        run: |
+        run: | # erstellt eine Invalidation für die CloudFront-Distribution, um sicherzustellen, dass die neuesten Dateien aus dem S3-Bucket bereitgestellt werden, indem alle zwischengespeicherten Inhalte gelöscht werden
           aws cloudfront create-invalidation \
             --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} \
             --paths "/*"
